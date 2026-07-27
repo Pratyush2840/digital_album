@@ -140,4 +140,154 @@ app.post('/posts/:id/comments', authMiddleware, async (req, res) => {
 });
 
 
+app.post('/users/:id/follow-request', authMiddleware, async (req, res) => {
+    const targetId = req.params.id;
+    if (targetId === req.user.id) {
+        return res.status(400).json({ message: 'You cannot follow yourself' });
+    }
+
+    const target = await userModel.findById(targetId);
+    if (!target) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    const alreadyFollowing = target.followers.some((id) => id.toString() === req.user.id);
+    if (alreadyFollowing) {
+        return res.status(409).json({ message: 'Already following this user' });
+    }
+
+    const alreadyRequested = target.followRequests.some((id) => id.toString() === req.user.id);
+    if (alreadyRequested) {
+        return res.status(409).json({ message: 'Follow request already sent' });
+    }
+
+    target.followRequests.push(req.user.id);
+    await target.save();
+
+    return res.status(201).json({ message: 'Follow request sent' });
+});
+
+
+app.post('/users/:id/accept-request', authMiddleware, async (req, res) => {
+    const requesterId = req.params.id;
+    const currentUser = await userModel.findById(req.user.id);
+
+    const hasRequest = currentUser.followRequests.some((id) => id.toString() === requesterId);
+    if (!hasRequest) {
+        return res.status(404).json({ message: 'No pending request from this user' });
+    }
+
+    const requester = await userModel.findById(requesterId);
+    if (!requester) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    currentUser.followRequests = currentUser.followRequests.filter((id) => id.toString() !== requesterId);
+    currentUser.followers.push(requesterId);
+    requester.following.push(currentUser._id);
+
+    await currentUser.save();
+    await requester.save();
+
+    return res.status(200).json({ message: 'Follow request accepted' });
+});
+
+
+app.post('/users/:id/reject-request', authMiddleware, async (req, res) => {
+    const requesterId = req.params.id;
+    const currentUser = await userModel.findById(req.user.id);
+
+    const hasRequest = currentUser.followRequests.some((id) => id.toString() === requesterId);
+    if (!hasRequest) {
+        return res.status(404).json({ message: 'No pending request from this user' });
+    }
+
+    currentUser.followRequests = currentUser.followRequests.filter((id) => id.toString() !== requesterId);
+    await currentUser.save();
+
+    return res.status(200).json({ message: 'Follow request rejected' });
+});
+
+
+app.post('/users/:id/unfollow', authMiddleware, async (req, res) => {
+    const targetId = req.params.id;
+    const currentUser = await userModel.findById(req.user.id);
+    const target = await userModel.findById(targetId);
+
+    if (!target) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    currentUser.following = currentUser.following.filter((id) => id.toString() !== targetId);
+    target.followers = target.followers.filter((id) => id.toString() !== req.user.id);
+
+    await currentUser.save();
+    await target.save();
+
+    return res.status(200).json({ message: 'Unfollowed successfully' });
+});
+
+
+app.get('/users/requests', authMiddleware, async (req, res) => {
+    const currentUser = await userModel.findById(req.user.id).populate('followRequests', 'username');
+    return res.status(200).json({
+        message: 'Follow requests fetched successfully',
+        requests: currentUser.followRequests
+    });
+});
+
+
+app.get('/users/search', authMiddleware, async (req, res) => {
+    const query = (req.query.q || '').trim();
+    const filter = {
+        _id: { $ne: req.user.id },
+        ...(query ? { username: { $regex: query, $options: 'i' } } : {})
+    };
+
+    const users = await userModel.find(filter).select('username').limit(20);
+    return res.status(200).json({
+        message: 'Users fetched successfully',
+        users
+    });
+});
+
+
+app.get('/users/:id', authMiddleware, async (req, res) => {
+    const user = await userModel.findById(req.params.id).select('username followers following followRequests');
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isSelf = user._id.toString() === req.user.id;
+    const isFollowing = user.followers.some((id) => id.toString() === req.user.id);
+    const requestSent = user.followRequests.some((id) => id.toString() === req.user.id);
+
+    return res.status(200).json({
+        message: 'User fetched successfully',
+        user: {
+            id: user._id,
+            username: user.username,
+            followersCount: user.followers.length,
+            followingCount: user.following.length,
+            isSelf,
+            isFollowing,
+            requestSent
+        }
+    });
+});
+
+
+app.get('/users/:id/posts', authMiddleware, async (req, res) => {
+    const posts = await postModel.find({ user: req.params.id })
+        .sort({ createdAt: -1 })
+        .populate('user', 'username')
+        .populate('comments.user', 'username');
+
+    return res.status(200).json({
+        message: 'Posts fetched successfully',
+        posts
+    });
+});
+
+
 module.exports = app;
