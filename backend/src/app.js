@@ -244,10 +244,15 @@ app.get('/users/search', authMiddleware, async (req, res) => {
         ...(query ? { username: { $regex: query, $options: 'i' } } : {})
     };
 
-    const users = await userModel.find(filter).select('username').limit(20);
+    const users = await userModel.find(filter).select('username followers followRequests').limit(20);
     return res.status(200).json({
         message: 'Users fetched successfully',
-        users: users.map((u) => ({ id: u._id, username: u.username }))
+        users: users.map((u) => ({
+            id: u._id,
+            username: u.username,
+            isFollowing: u.followers.some((id) => id.toString() === req.user.id),
+            requestSent: u.followRequests.some((id) => id.toString() === req.user.id)
+        }))
     });
 });
 
