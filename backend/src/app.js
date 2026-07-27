@@ -232,7 +232,7 @@ app.get('/users/requests', authMiddleware, async (req, res) => {
     const currentUser = await userModel.findById(req.user.id).populate('followRequests', 'username');
     return res.status(200).json({
         message: 'Follow requests fetched successfully',
-        requests: currentUser.followRequests
+        requests: currentUser.followRequests.map((u) => ({ id: u._id, username: u.username }))
     });
 });
 
@@ -247,7 +247,7 @@ app.get('/users/search', authMiddleware, async (req, res) => {
     const users = await userModel.find(filter).select('username').limit(20);
     return res.status(200).json({
         message: 'Users fetched successfully',
-        users
+        users: users.map((u) => ({ id: u._id, username: u.username }))
     });
 });
 
