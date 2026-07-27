@@ -92,6 +92,59 @@ html{
   margin-bottom: 10px;
 }
 
+.post-author{
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.post-actions{
+  margin: 10px 0;
+}
+
+.like-button{
+  padding: 6px 14px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  background-color: #fff;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.like-button.liked{
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+.post-comments{
+  margin: 10px 0;
+}
+
+.post-comment{
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.comment-form{
+  display: flex;
+  gap: 8px;
+}
+
+.comment-form input{
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.comment-form button{
+  padding: 8px 14px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
 .auth-section{
   width: 100%;
   height: 100%;
