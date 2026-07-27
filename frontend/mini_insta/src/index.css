@@ -134,3 +134,37 @@ html{
   color: #c0392b;
   margin-bottom: 10px;
 }
+
+.nav-bar{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 30px;
+  background-color: #fdfcfd;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-bar a{
+  text-decoration: none;
+  color: #333;
+  font-weight: 600;
+}
+
+.nav-spacer{
+  flex: 1;
+}
+
+.nav-username{
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+.nav-bar button{
+  padding: 8px 16px;
+  background-color: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}

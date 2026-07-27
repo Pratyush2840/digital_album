@@ -1,16 +1,20 @@
-import React from 'react'
-import axios from 'axios'
+import React, { useState } from 'react'
+import api from '../utils/api.js'
 import {useNavigate} from 'react-router-dom'
+import NavBar from '../components/NavBar.jsx'
 
 
 
 
 const CreatePost = () => {
   const navigate = useNavigate();
+  const [error, setError] = useState('');
+
   const handleSubmit = async(e) => {
     e.preventDefault();
+    setError('');
     const formData = new FormData(e.target);
-    axios.post('http://localhost:3000/create-post', formData, {
+    api.post('/create-post', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -18,19 +22,23 @@ const CreatePost = () => {
       navigate('/feed');
     })
     .catch((err) => {
-      console.log(err);
+      setError(err.response?.data?.message || 'Failed to create post');
     })
   }
   return (
-    <section className='create-post-section'>
-      <h1>Create Post</h1>
-      
-      <form onSubmit={handleSubmit}>
-        <input type="file" name='image' accept = "image/*" />
-        <input type="text" name='caption' placeholder='Enter Caption' required />
-        <button type='submit'>Create Post</button>
-      </form>
-    </section>
+    <>
+      <NavBar />
+      <section className='create-post-section'>
+        <h1>Create Post</h1>
+
+        <form onSubmit={handleSubmit}>
+          <input type="file" name='image' accept = "image/*" />
+          <input type="text" name='caption' placeholder='Enter Caption' required />
+          {error && <p className="auth-error">{error}</p>}
+          <button type='submit'>Create Post</button>
+        </form>
+      </section>
+    </>
   )
 }
 
