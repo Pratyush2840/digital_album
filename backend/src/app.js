@@ -94,4 +94,50 @@ app.get('/posts', async (req, res) => {
         })
 })
 
+app.post('/posts/:id/like', authMiddleware, async (req, res) => {
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const userId = req.user.id;
+    const alreadyLiked = post.likes.some((id) => id.toString() === userId);
+
+    if (alreadyLiked) {
+        post.likes = post.likes.filter((id) => id.toString() !== userId);
+    } else {
+        post.likes.push(userId);
+    }
+
+    await post.save();
+
+    return res.status(200).json({
+        message: alreadyLiked ? 'Post unliked' : 'Post liked',
+        likes: post.likes
+    });
+});
+
+
+app.post('/posts/:id/comments', authMiddleware, async (req, res) => {
+    const { text } = req.body;
+    if (!text || !text.trim()) {
+        return res.status(400).json({ message: 'Comment text is required' });
+    }
+
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    post.comments.push({ user: req.user.id, text: text.trim() });
+    await post.save();
+    await post.populate('comments.user', 'username');
+
+    return res.status(201).json({
+        message: 'Comment added successfully',
+        comments: post.comments
+    });
+});
+
+
 module.exports = app;
