@@ -1,4 +1,5 @@
 import React , {useState , useEffect} from 'react'
+import { Link } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -50,7 +51,9 @@ const Feed = () => {
                 return (
                     <div key={post._id} className='post-card'>
                         <img src={post.image} alt='Post' />
-                        {post.user?.username && <p className='post-author'>@{post.user.username}</p>}
+                        {post.user?.username && (
+                            <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>
+                        )}
                         <p>{post.caption}</p>
 
                         <div className='post-actions'>

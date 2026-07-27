@@ -35,7 +35,7 @@ const CreatePost = () => {
           <input type="file" name='image' accept = "image/*" />
           <input type="text" name='caption' placeholder='Enter Caption' required />
           {error && <p className="auth-error">{error}</p>}
-          <button type='submit'>Create Post</button>
+          <button type='submit' className='btn-primary'>Create Post</button>
         </form>
       </section>
     </>

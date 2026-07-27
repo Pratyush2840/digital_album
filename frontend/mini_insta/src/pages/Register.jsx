@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import ThemeToggle from '../components/ThemeToggle.jsx'
 
 const Register = () => {
   const [username, setUsername] = useState('')
@@ -22,12 +23,16 @@ const Register = () => {
 
   return (
     <section className='auth-section'>
+      <div className='auth-topbar'>
+        <Link to='/' className='nav-bar-logo'>Mini Insta</Link>
+        <ThemeToggle />
+      </div>
       <h1>Register</h1>
       <form onSubmit={handleSubmit}>
         <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         {error && <p className="auth-error">{error}</p>}
-        <button type="submit">Register</button>
+        <button type="submit" className="btn-primary">Register</button>
       </form>
       <p>Already have an account? <Link to="/login">Login</Link></p>
     </section>
