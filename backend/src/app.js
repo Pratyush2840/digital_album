@@ -6,6 +6,7 @@ const postModel=require('./models/post.model.js');
 const userModel=require('./models/user.model.js');
 const { hashPassword, comparePassword, generateToken } = require('./services/auth.service.js');
 const cors = require('cors');
+const authMiddleware = require('./middlewares/auth.middleware.js');
 
 app.use(cors());
 
@@ -66,13 +67,12 @@ app.post('/auth/login', async (req, res) => {
 });
 
 
-app.post('/create-post', upload.single("image"), async (req, res) => {
-    console.log(req.body);
-    console.log(req.file);
+app.post('/create-post', authMiddleware, upload.single("image"), async (req, res) => {
     const result=await uploadFile(req.file.buffer);
     const post=await postModel.create({
         image:result.url,
-        caption:req.body.caption
+        caption:req.body.caption,
+        user:req.user.id
     })
 
     return res.status(201).json({
@@ -84,7 +84,10 @@ app.post('/create-post', upload.single("image"), async (req, res) => {
 
 
 app.get('/posts', async (req, res) => {
-        const posts=await postModel.find();
+        const posts=await postModel.find()
+            .sort({ createdAt: -1 })
+            .populate('user', 'username')
+            .populate('comments.user', 'username');
         return res.status(200).json({
             message:"Posts fetched successfully",
             posts
