@@ -366,8 +366,37 @@ app.get('/users/search', authMiddleware, async (req, res) => {
 });
 
 
+app.patch('/users/me', authMiddleware, upload.single('avatar'), async (req, res) => {
+    const currentUser = await userModel.findById(req.user.id);
+
+    if (typeof req.body.name === 'string') {
+        currentUser.name = req.body.name.trim();
+    }
+    if (typeof req.body.bio === 'string') {
+        currentUser.bio = req.body.bio.trim();
+    }
+    if (req.file) {
+        const result = await uploadFile(req.file.buffer);
+        currentUser.avatar = result.url;
+    }
+
+    await currentUser.save();
+
+    return res.status(200).json({
+        message: 'Profile updated successfully',
+        user: {
+            id: currentUser._id,
+            username: currentUser.username,
+            name: currentUser.name,
+            bio: currentUser.bio,
+            avatar: currentUser.avatar
+        }
+    });
+});
+
+
 app.get('/users/:id', authMiddleware, async (req, res) => {
-    const user = await userModel.findById(req.params.id).select('username followers following followRequests');
+    const user = await userModel.findById(req.params.id).select('username name bio avatar followers following followRequests');
     if (!user) {
         return res.status(404).json({ message: 'User not found' });
     }
@@ -381,6 +410,9 @@ app.get('/users/:id', authMiddleware, async (req, res) => {
         user: {
             id: user._id,
             username: user.username,
+            name: user.name,
+            bio: user.bio,
+            avatar: user.avatar,
             followersCount: user.followers.length,
             followingCount: user.following.length,
             isSelf,
