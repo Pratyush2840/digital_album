@@ -10,6 +10,10 @@ const Profile = () => {
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
   const [busy, setBusy] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+  const [bioDraft, setBioDraft] = useState('')
+  const [avatarFile, setAvatarFile] = useState(null)
 
   const load = () => {
     api.get(`/users/${id}`).then((res) => setProfile(res.data.user))
@@ -39,6 +43,33 @@ const Profile = () => {
     api.delete(`/posts/${postId}`).then(load)
   }
 
+  const startEditProfile = () => {
+    setNameDraft(profile.name || '')
+    setBioDraft(profile.bio || '')
+    setAvatarFile(null)
+    setIsEditing(true)
+  }
+
+  const handleProfileSave = (e) => {
+    e.preventDefault()
+    const formData = new FormData()
+    formData.append('name', nameDraft)
+    formData.append('bio', bioDraft)
+    if (avatarFile) {
+      formData.append('avatar', avatarFile)
+    }
+
+    setBusy(true)
+    api.patch('/users/me', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+      .then(() => {
+        setIsEditing(false)
+        load()
+      })
+      .finally(() => setBusy(false))
+  }
+
   if (!profile) {
     return (
       <>
@@ -57,14 +88,24 @@ const Profile = () => {
       <NavBar />
       <section className='profile-section'>
         <div className='profile-header'>
-          <div className='profile-avatar'>{profile.username.charAt(0).toUpperCase()}</div>
+          {profile.avatar ? (
+            <img className='profile-avatar profile-avatar-img' src={profile.avatar} alt={profile.username} />
+          ) : (
+            <div className='profile-avatar'>{profile.username.charAt(0).toUpperCase()}</div>
+          )}
           <div>
-            <h2>@{profile.username}</h2>
+            <h2>{profile.name || `@${profile.username}`}</h2>
+            {profile.name && <p className='profile-username-sub'>@{profile.username}</p>}
+            {profile.bio && <p className='profile-bio'>{profile.bio}</p>}
             <div className='profile-stats'>
               <span>{profile.followersCount} followers</span>
               <span>{profile.followingCount} following</span>
             </div>
-            {!isOwnProfile && (
+            {isOwnProfile ? (
+              <div style={{ marginTop: 14 }}>
+                <button className='btn-secondary' onClick={startEditProfile}>Edit Profile</button>
+              </div>
+            ) : (
               <div style={{ marginTop: 14 }}>
                 {profile.isFollowing ? (
                   <button className='btn-danger' disabled={busy} onClick={handleUnfollow}>Unfollow</button>
@@ -77,6 +118,27 @@ const Profile = () => {
             )}
           </div>
         </div>
+
+        {isEditing && (
+          <form className='profile-edit-form' onSubmit={handleProfileSave}>
+            <label>
+              Name
+              <input type='text' value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} placeholder='Your name' />
+            </label>
+            <label>
+              Bio
+              <textarea value={bioDraft} onChange={(e) => setBioDraft(e.target.value)} placeholder='Tell people about yourself' />
+            </label>
+            <label>
+              Avatar
+              <input type='file' accept='image/*' onChange={(e) => setAvatarFile(e.target.files[0])} />
+            </label>
+            <div className='profile-edit-actions'>
+              <button type='submit' className='btn-primary' disabled={busy}>Save</button>
+              <button type='button' className='btn-secondary' onClick={() => setIsEditing(false)}>Cancel</button>
+            </div>
+          </form>
+        )}
 
         <div className='profile-posts-grid'>
           {posts.map((post) => (
