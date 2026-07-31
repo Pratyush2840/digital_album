@@ -196,6 +196,34 @@ app.get('/users/me/saved', authMiddleware, async (req, res) => {
 });
 
 
+app.delete('/posts/:id/comments/:commentId', authMiddleware, async (req, res) => {
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+        return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    const isCommentAuthor = comment.user.toString() === req.user.id;
+    const isPostOwner = post.user.toString() === req.user.id;
+    if (!isCommentAuthor && !isPostOwner) {
+        return res.status(403).json({ message: 'You can only delete your own comments' });
+    }
+
+    comment.deleteOne();
+    await post.save();
+    await post.populate('comments.user', 'username');
+
+    return res.status(200).json({
+        message: 'Comment deleted successfully',
+        comments: post.comments
+    });
+});
+
+
 app.post('/users/:id/follow-request', authMiddleware, async (req, res) => {
     const targetId = req.params.id;
     if (targetId === req.user.id) {
