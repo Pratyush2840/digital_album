@@ -156,6 +156,46 @@ app.post('/posts/:id/comments', authMiddleware, async (req, res) => {
 });
 
 
+app.post('/posts/:id/save', authMiddleware, async (req, res) => {
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const currentUser = await userModel.findById(req.user.id);
+    const alreadySaved = currentUser.savedPosts.some((id) => id.toString() === post._id.toString());
+
+    if (alreadySaved) {
+        currentUser.savedPosts = currentUser.savedPosts.filter((id) => id.toString() !== post._id.toString());
+    } else {
+        currentUser.savedPosts.push(post._id);
+    }
+
+    await currentUser.save();
+
+    return res.status(200).json({
+        message: alreadySaved ? 'Post unsaved' : 'Post saved',
+        savedPosts: currentUser.savedPosts
+    });
+});
+
+
+app.get('/users/me/saved', authMiddleware, async (req, res) => {
+    const currentUser = await userModel.findById(req.user.id).populate({
+        path: 'savedPosts',
+        populate: [
+            { path: 'user', select: 'username' },
+            { path: 'comments.user', select: 'username' }
+        ]
+    });
+
+    return res.status(200).json({
+        message: 'Saved posts fetched successfully',
+        posts: currentUser.savedPosts
+    });
+});
+
+
 app.post('/users/:id/follow-request', authMiddleware, async (req, res) => {
     const targetId = req.params.id;
     if (targetId === req.user.id) {
