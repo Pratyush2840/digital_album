@@ -47,6 +47,11 @@ const Feed = () => {
         setCommentDrafts((prev) => ({ ...prev, [postId]: value }))
     }
 
+    const handleCommentDelete = (postId, commentId) => {
+        api.delete(`/posts/${postId}/comments/${commentId}`)
+        .then(() => loadPosts())
+    }
+
     const handleCommentSubmit = (e, postId) => {
         e.preventDefault()
         const text = commentDrafts[postId]
@@ -96,11 +101,22 @@ const Feed = () => {
                         </div>
 
                         <div className='post-comments'>
-                            {post.comments?.map((comment) => (
-                                <p key={comment._id} className='post-comment'>
-                                    <strong>@{comment.user?.username}</strong> {comment.text}
-                                </p>
-                            ))}
+                            {post.comments?.map((comment) => {
+                                const canDelete = user && (comment.user?._id === user.id || post.user?._id === user.id)
+                                return (
+                                    <p key={comment._id} className='post-comment'>
+                                        <strong>@{comment.user?.username}</strong> {comment.text}
+                                        {canDelete && (
+                                            <button
+                                                className='comment-delete-button'
+                                                onClick={() => handleCommentDelete(post._id, comment._id)}
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </p>
+                                )
+                            })}
                         </div>
 
                         <form className='comment-form' onSubmit={(e) => handleCommentSubmit(e, post._id)}>
