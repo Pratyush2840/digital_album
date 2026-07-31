@@ -83,6 +83,22 @@ app.post('/create-post', authMiddleware, upload.single("image"), async (req, res
 });
 
 
+app.delete('/posts/:id', authMiddleware, async (req, res) => {
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.user.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'You can only delete your own posts' });
+    }
+
+    await post.deleteOne();
+
+    return res.status(200).json({ message: 'Post deleted successfully' });
+});
+
+
 app.get('/posts', async (req, res) => {
         const posts=await postModel.find()
             .sort({ createdAt: -1 })
