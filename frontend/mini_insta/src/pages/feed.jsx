@@ -25,6 +25,12 @@ const Feed = () => {
         .then(() => loadPosts())
     }
 
+    const handleDelete = (postId) => {
+        if (!window.confirm('Delete this post?')) return
+        api.delete(`/posts/${postId}`)
+        .then(() => loadPosts())
+    }
+
     const handleCommentChange = (postId, value) => {
         setCommentDrafts((prev) => ({ ...prev, [postId]: value }))
     }
@@ -51,9 +57,14 @@ const Feed = () => {
                 return (
                     <div key={post._id} className='post-card'>
                         <img src={post.image} alt='Post' />
-                        {post.user?.username && (
-                            <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>
-                        )}
+                        <div className='post-header'>
+                            {post.user?.username && (
+                                <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>
+                            )}
+                            {user && post.user?._id === user.id && (
+                                <button className='post-delete-button' onClick={() => handleDelete(post._id)}>Delete</button>
+                            )}
+                        </div>
                         <p>{post.caption}</p>
 
                         <div className='post-actions'>

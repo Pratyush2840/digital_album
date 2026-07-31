@@ -34,6 +34,11 @@ const Profile = () => {
       .finally(() => setBusy(false))
   }
 
+  const handleDeletePost = (postId) => {
+    if (!window.confirm('Delete this post?')) return
+    api.delete(`/posts/${postId}`).then(load)
+  }
+
   if (!profile) {
     return (
       <>
@@ -75,7 +80,12 @@ const Profile = () => {
 
         <div className='profile-posts-grid'>
           {posts.map((post) => (
-            <img key={post._id} src={post.image} alt={post.caption} />
+            <div key={post._id} className='profile-post-tile'>
+              <img src={post.image} alt={post.caption} />
+              {isOwnProfile && (
+                <button className='profile-post-delete' onClick={() => handleDeletePost(post._id)}>Delete</button>
+              )}
+            </div>
           ))}
         </div>
         {posts.length === 0 && <p className='empty-state'>No posts yet.</p>}
