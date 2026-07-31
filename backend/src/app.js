@@ -83,6 +83,31 @@ app.post('/create-post', authMiddleware, upload.single("image"), async (req, res
 });
 
 
+app.patch('/posts/:id', authMiddleware, async (req, res) => {
+    const { caption } = req.body;
+    if (typeof caption !== 'string' || !caption.trim()) {
+        return res.status(400).json({ message: 'Caption is required' });
+    }
+
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.user.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'You can only edit your own posts' });
+    }
+
+    post.caption = caption.trim();
+    await post.save();
+
+    return res.status(200).json({
+        message: 'Post updated successfully',
+        post
+    });
+});
+
+
 app.delete('/posts/:id', authMiddleware, async (req, res) => {
     const post = await postModel.findById(req.params.id);
     if (!post) {
