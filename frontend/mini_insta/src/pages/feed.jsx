@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 const Feed = () => {
     const [posts, setposts] = useState([])
     const [commentDrafts, setCommentDrafts] = useState({})
+    const [savedIds, setSavedIds] = useState([])
     const { user } = useAuth()
 
     const loadPosts = () => {
@@ -16,9 +17,20 @@ const Feed = () => {
         })
     }
 
+    const loadSaved = () => {
+        api.get('/users/me/saved')
+        .then((res) => setSavedIds(res.data.posts.map((p) => p._id)))
+    }
+
     useEffect(() => {
         loadPosts()
+        loadSaved()
     } , [])
+
+    const handleSave = (postId) => {
+        api.post(`/posts/${postId}/save`)
+        .then(() => loadSaved())
+    }
 
     const handleLike = (postId) => {
         api.post(`/posts/${postId}/like`)
@@ -54,6 +66,7 @@ const Feed = () => {
         posts.length > 0 ? (
             posts.map((post) => {
                 const isLiked = user && post.likes?.some((id) => id === user.id)
+                const isSaved = savedIds.includes(post._id)
                 return (
                     <div key={post._id} className='post-card'>
                         <img src={post.image} alt='Post' />
@@ -73,6 +86,12 @@ const Feed = () => {
                                 onClick={() => handleLike(post._id)}
                             >
                                 {isLiked ? '♥' : '♡'} {post.likes?.length || 0}
+                            </button>
+                            <button
+                                className={isSaved ? 'save-button saved' : 'save-button'}
+                                onClick={() => handleSave(post._id)}
+                            >
+                                {isSaved ? '★ Saved' : '☆ Save'}
                             </button>
                         </div>
 

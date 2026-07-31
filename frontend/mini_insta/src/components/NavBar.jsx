@@ -19,6 +19,7 @@ const NavBar = () => {
       <Link to='/create-post'>Create Post</Link>
       <Link to='/people'>People</Link>
       <Link to='/requests'>Requests</Link>
+      <Link to='/saved'>Saved</Link>
       <span className='nav-spacer' />
       <ThemeToggle />
       {user && <Link to={`/profile/${user.id}`} className='nav-username'>@{user.username}</Link>}

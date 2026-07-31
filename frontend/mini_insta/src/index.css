@@ -366,6 +366,27 @@ button{
   border-color: var(--danger);
 }
 
+.save-button{
+  padding: 7px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background-color: var(--bg-alt);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 15px;
+  margin-left: 8px;
+  transition: transform 0.15s ease;
+}
+
+.save-button:active{
+  transform: scale(0.92);
+}
+
+.save-button.saved{
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
 .post-comments{
   margin: 10px 0;
 }
