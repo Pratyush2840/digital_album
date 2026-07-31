@@ -8,6 +8,8 @@ const Feed = () => {
     const [posts, setposts] = useState([])
     const [commentDrafts, setCommentDrafts] = useState({})
     const [savedIds, setSavedIds] = useState([])
+    const [editingPostId, setEditingPostId] = useState(null)
+    const [captionDraft, setCaptionDraft] = useState('')
     const { user } = useAuth()
 
     const loadPosts = () => {
@@ -41,6 +43,26 @@ const Feed = () => {
         if (!window.confirm('Delete this post?')) return
         api.delete(`/posts/${postId}`)
         .then(() => loadPosts())
+    }
+
+    const startEdit = (post) => {
+        setEditingPostId(post._id)
+        setCaptionDraft(post.caption || '')
+    }
+
+    const cancelEdit = () => {
+        setEditingPostId(null)
+        setCaptionDraft('')
+    }
+
+    const handleCaptionSave = (postId) => {
+        if (!captionDraft.trim()) return
+        api.patch(`/posts/${postId}`, { caption: captionDraft })
+        .then(() => {
+            setEditingPostId(null)
+            setCaptionDraft('')
+            loadPosts()
+        })
     }
 
     const handleCommentChange = (postId, value) => {
@@ -80,10 +102,25 @@ const Feed = () => {
                                 <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>
                             )}
                             {user && post.user?._id === user.id && (
-                                <button className='post-delete-button' onClick={() => handleDelete(post._id)}>Delete</button>
+                                <div className='post-owner-actions'>
+                                    <button className='post-edit-button' onClick={() => startEdit(post)}>Edit</button>
+                                    <button className='post-delete-button' onClick={() => handleDelete(post._id)}>Delete</button>
+                                </div>
                             )}
                         </div>
-                        <p>{post.caption}</p>
+                        {editingPostId === post._id ? (
+                            <div className='caption-edit-form'>
+                                <input
+                                    type='text'
+                                    value={captionDraft}
+                                    onChange={(e) => setCaptionDraft(e.target.value)}
+                                />
+                                <button onClick={() => handleCaptionSave(post._id)}>Save</button>
+                                <button className='btn-secondary' onClick={cancelEdit}>Cancel</button>
+                            </div>
+                        ) : (
+                            <p>{post.caption}</p>
+                        )}
 
                         <div className='post-actions'>
                             <button
