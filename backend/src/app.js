@@ -4,6 +4,7 @@ const multer=require('multer');
 const uploadFile=require('./services/storage.service.js');
 const postModel=require('./models/post.model.js');
 const userModel=require('./models/user.model.js');
+const messageModel=require('./models/message.model.js');
 const { hashPassword, comparePassword, generateToken } = require('./services/auth.service.js');
 const cors = require('cors');
 const authMiddleware = require('./middlewares/auth.middleware.js');
@@ -20,6 +21,17 @@ function isVisibleToViewer(owner, viewerId) {
     if (owner._id.toString() === viewerId) return true;
     if (!owner.isPrivate) return true;
     return owner.followers.some((id) => id.toString() === viewerId);
+}
+
+async function areMutualFollowers(userIdA, userIdB) {
+    const [userA, userB] = await Promise.all([
+        userModel.findById(userIdA).select('following'),
+        userModel.findById(userIdB).select('following')
+    ]);
+    if (!userA || !userB) return false;
+    const aFollowsB = userA.following.some((id) => id.toString() === userIdB);
+    const bFollowsA = userB.following.some((id) => id.toString() === userIdA);
+    return aFollowsB && bFollowsA;
 }
 
 
@@ -503,6 +515,107 @@ app.get('/users/:id/posts', authMiddleware, async (req, res) => {
     return res.status(200).json({
         message: 'Posts fetched successfully',
         posts
+    });
+});
+
+
+app.get('/messages/conversations', authMiddleware, async (req, res) => {
+    const currentUser = await userModel.findById(req.user.id).select('following followers');
+    const friendIds = currentUser.following.filter((id) =>
+        currentUser.followers.some((followerId) => followerId.toString() === id.toString())
+    );
+
+    const friends = await userModel.find({ _id: { $in: friendIds } }).select('username name avatar');
+
+    const conversations = await Promise.all(friends.map(async (friend) => {
+        const lastMessage = await messageModel.findOne({
+            $or: [
+                { sender: req.user.id, recipient: friend._id },
+                { sender: friend._id, recipient: req.user.id }
+            ]
+        }).sort({ createdAt: -1 });
+
+        const unreadCount = await messageModel.countDocuments({
+            sender: friend._id,
+            recipient: req.user.id,
+            read: false
+        });
+
+        return {
+            id: friend._id,
+            username: friend.username,
+            name: friend.name,
+            avatar: friend.avatar,
+            lastMessage: lastMessage ? lastMessage.text : null,
+            lastMessageAt: lastMessage ? lastMessage.createdAt : null,
+            unreadCount
+        };
+    }));
+
+    conversations.sort((a, b) => new Date(b.lastMessageAt || 0) - new Date(a.lastMessageAt || 0));
+
+    return res.status(200).json({
+        message: 'Conversations fetched successfully',
+        conversations
+    });
+});
+
+
+app.get('/messages/:userId', authMiddleware, async (req, res) => {
+    const otherUserId = req.params.userId;
+
+    const mutual = await areMutualFollowers(req.user.id, otherUserId);
+    if (!mutual) {
+        return res.status(403).json({ message: 'You can only chat with users who follow you back' });
+    }
+
+    const messages = await messageModel.find({
+        $or: [
+            { sender: req.user.id, recipient: otherUserId },
+            { sender: otherUserId, recipient: req.user.id }
+        ]
+    }).sort({ createdAt: 1 });
+
+    await messageModel.updateMany(
+        { sender: otherUserId, recipient: req.user.id, read: false },
+        { read: true }
+    );
+
+    return res.status(200).json({
+        message: 'Messages fetched successfully',
+        messages
+    });
+});
+
+
+app.post('/messages/:userId', authMiddleware, async (req, res) => {
+    const otherUserId = req.params.userId;
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+        return res.status(400).json({ message: 'Message text is required' });
+    }
+
+    const mutual = await areMutualFollowers(req.user.id, otherUserId);
+    if (!mutual) {
+        return res.status(403).json({ message: 'You can only chat with users who follow you back' });
+    }
+
+    const savedMessage = await messageModel.create({
+        sender: req.user.id,
+        recipient: otherUserId,
+        text: text.trim()
+    });
+
+    const io = req.app.get('io');
+    if (io) {
+        io.to(otherUserId).emit('new-message', savedMessage);
+        io.to(req.user.id).emit('new-message', savedMessage);
+    }
+
+    return res.status(201).json({
+        message: 'Message sent successfully',
+        savedMessage
     });
 });
 
