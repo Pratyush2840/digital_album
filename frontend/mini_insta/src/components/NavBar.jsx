@@ -23,6 +23,7 @@ const NavBar = () => {
         <NavLink to='/people' className={navLinkClass}>People</NavLink>
         <NavLink to='/requests' className={navLinkClass}>Requests</NavLink>
         <NavLink to='/saved' className={navLinkClass}>Saved</NavLink>
+        <NavLink to='/chat' className={navLinkClass}>Messages</NavLink>
       </div>
       <span className='nav-spacer' />
       <ThemeToggle />

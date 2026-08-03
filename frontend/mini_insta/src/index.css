@@ -783,6 +783,149 @@ button{
   opacity: 1;
 }
 
+/* ---------- chat ---------- */
+
+.chat-section{
+  width: 100%;
+  height: calc(100vh - 73px);
+  display: flex;
+  background: var(--bg);
+}
+
+.chat-sidebar{
+  width: 300px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  overflow-y: auto;
+  padding: 16px 0;
+}
+
+.chat-sidebar-title{
+  padding: 0 20px 14px;
+}
+
+.chat-conversation{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  transition: background-color 0.15s ease;
+}
+
+.chat-conversation:hover,
+.chat-conversation.active{
+  background: var(--surface-alt);
+}
+
+.chat-conversation-info{
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-conversation-name{
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.chat-conversation-preview{
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-unread-badge{
+  background: var(--gradient);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.chat-thread{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-thread-header{
+  width: 100%;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  align-self: flex-start;
+}
+
+.chat-thread-header a{
+  text-decoration: none;
+}
+
+.chat-messages{
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-bubble{
+  max-width: 60%;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface-alt);
+  align-self: flex-start;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.chat-bubble.mine{
+  background: var(--gradient);
+  color: #fff;
+  align-self: flex-end;
+}
+
+.chat-input-form{
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-input-form input{
+  flex: 1;
+  padding: 11px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-alt);
+  color: var(--text);
+}
+
+@media (max-width: 720px){
+  .chat-sidebar{
+    width: 110px;
+  }
+
+  .chat-conversation-preview{
+    display: none;
+  }
+}
+
 /* ---------- landing page ---------- */
 
 .landing{
