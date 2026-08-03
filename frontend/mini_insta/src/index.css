@@ -317,6 +317,10 @@ button{
   margin-bottom: 12px;
 }
 
+.post-card > a{
+  display: block;
+}
+
 .post-author{
   font-weight: 600;
   margin-bottom: 6px;

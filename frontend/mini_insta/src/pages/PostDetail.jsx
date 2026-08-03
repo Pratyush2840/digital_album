@@ -1,0 +1,181 @@
+import React, { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import api from '../utils/api.js'
+import NavBar from '../components/NavBar.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
+
+const PostDetail = () => {
+    const { id } = useParams()
+    const navigate = useNavigate()
+    const { user } = useAuth()
+    const [post, setPost] = useState(null)
+    const [notFound, setNotFound] = useState(false)
+    const [isSaved, setIsSaved] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const [captionDraft, setCaptionDraft] = useState('')
+    const [commentDraft, setCommentDraft] = useState('')
+
+    const loadPost = () => {
+        api.get(`/posts/${id}`)
+            .then((res) => setPost(res.data.post))
+            .catch(() => setNotFound(true))
+    }
+
+    const loadSaved = () => {
+        api.get('/users/me/saved')
+            .then((res) => setIsSaved(res.data.posts.some((p) => p._id === id)))
+    }
+
+    useEffect(() => {
+        loadPost()
+        loadSaved()
+    }, [id])
+
+    const handleLike = () => {
+        api.post(`/posts/${id}/like`).then(loadPost)
+    }
+
+    const handleSave = () => {
+        api.post(`/posts/${id}/save`).then(loadSaved)
+    }
+
+    const handleDelete = () => {
+        if (!window.confirm('Delete this post?')) return
+        api.delete(`/posts/${id}`).then(() => navigate('/feed'))
+    }
+
+    const startEdit = () => {
+        setCaptionDraft(post.caption || '')
+        setIsEditing(true)
+    }
+
+    const handleCaptionSave = () => {
+        if (!captionDraft.trim()) return
+        api.patch(`/posts/${id}`, { caption: captionDraft })
+            .then(() => {
+                setIsEditing(false)
+                loadPost()
+            })
+    }
+
+    const handleCommentDelete = (commentId) => {
+        api.delete(`/posts/${id}/comments/${commentId}`).then(loadPost)
+    }
+
+    const handleCommentSubmit = (e) => {
+        e.preventDefault()
+        if (!commentDraft.trim()) return
+        api.post(`/posts/${id}/comments`, { text: commentDraft })
+            .then(() => {
+                setCommentDraft('')
+                loadPost()
+            })
+    }
+
+    if (notFound) {
+        return (
+            <>
+                <NavBar />
+                <section className='feed-section'>
+                    <p className='empty-state'>Post not found.</p>
+                </section>
+            </>
+        )
+    }
+
+    if (!post) {
+        return (
+            <>
+                <NavBar />
+                <section className='feed-section'>
+                    <p className='empty-state'>Loading post...</p>
+                </section>
+            </>
+        )
+    }
+
+    const isLiked = user && post.likes?.some((likeId) => likeId === user.id)
+    const isOwner = user && post.user?._id === user.id
+
+    return (
+        <>
+            <NavBar />
+            <section className='feed-section'>
+                <div className='post-card'>
+                    <img src={post.image} alt='Post' />
+                    <div className='post-header'>
+                        {post.user?.username && (
+                            <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>
+                        )}
+                        {isOwner && (
+                            <div className='post-owner-actions'>
+                                <button className='post-edit-button' onClick={startEdit}>Edit</button>
+                                <button className='post-delete-button' onClick={handleDelete}>Delete</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {isEditing ? (
+                        <div className='caption-edit-form'>
+                            <input
+                                type='text'
+                                value={captionDraft}
+                                onChange={(e) => setCaptionDraft(e.target.value)}
+                            />
+                            <button onClick={handleCaptionSave}>Save</button>
+                            <button className='btn-secondary' onClick={() => setIsEditing(false)}>Cancel</button>
+                        </div>
+                    ) : (
+                        <p>{post.caption}</p>
+                    )}
+
+                    <div className='post-actions'>
+                        <button
+                            className={isLiked ? 'like-button liked' : 'like-button'}
+                            onClick={handleLike}
+                        >
+                            {isLiked ? '♥' : '♡'} {post.likes?.length || 0}
+                        </button>
+                        <button
+                            className={isSaved ? 'save-button saved' : 'save-button'}
+                            onClick={handleSave}
+                        >
+                            {isSaved ? '★ Saved' : '☆ Save'}
+                        </button>
+                    </div>
+
+                    <div className='post-comments'>
+                        {post.comments?.map((comment) => {
+                            const canDelete = user && (comment.user?._id === user.id || isOwner)
+                            return (
+                                <p key={comment._id} className='post-comment'>
+                                    <strong>@{comment.user?.username}</strong> {comment.text}
+                                    {canDelete && (
+                                        <button
+                                            className='comment-delete-button'
+                                            onClick={() => handleCommentDelete(comment._id)}
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </p>
+                            )
+                        })}
+                    </div>
+
+                    <form className='comment-form' onSubmit={handleCommentSubmit}>
+                        <input
+                            type='text'
+                            placeholder='Add a comment...'
+                            value={commentDraft}
+                            onChange={(e) => setCommentDraft(e.target.value)}
+                        />
+                        <button type='submit'>Post</button>
+                    </form>
+                </div>
+            </section>
+        </>
+    )
+}
+
+export default PostDetail

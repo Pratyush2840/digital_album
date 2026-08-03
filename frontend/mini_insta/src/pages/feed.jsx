@@ -96,7 +96,9 @@ const Feed = () => {
                 const isSaved = savedIds.includes(post._id)
                 return (
                     <div key={post._id} className='post-card'>
-                        <img src={post.image} alt='Post' />
+                        <Link to={`/post/${post._id}`}>
+                            <img src={post.image} alt='Post' />
+                        </Link>
                         <div className='post-header'>
                             {post.user?.username && (
                                 <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>

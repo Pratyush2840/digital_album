@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -143,7 +143,9 @@ const Profile = () => {
         <div className='profile-posts-grid'>
           {posts.map((post) => (
             <div key={post._id} className='profile-post-tile'>
-              <img src={post.image} alt={post.caption} />
+              <Link to={`/post/${post._id}`}>
+                <img src={post.image} alt={post.caption} />
+              </Link>
               {isOwnProfile && (
                 <button className='profile-post-delete' onClick={() => handleDeletePost(post._id)}>Delete</button>
               )}
