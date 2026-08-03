@@ -5,6 +5,7 @@ import ThemeToggle from '../components/ThemeToggle.jsx'
 
 const Register = () => {
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const { register } = useAuth()
@@ -14,7 +15,7 @@ const Register = () => {
     e.preventDefault()
     setError('')
     try {
-      await register(username, password)
+      await register(username, password, email)
       navigate('/feed')
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed')
@@ -30,6 +31,7 @@ const Register = () => {
       <h1>Register</h1>
       <form onSubmit={handleSubmit}>
         <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+        <input type="email" placeholder="Email (used for password reset)" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         {error && <p className="auth-error">{error}</p>}
         <button type="submit" className="btn-primary">Register</button>

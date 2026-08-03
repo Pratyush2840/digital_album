@@ -284,6 +284,50 @@ button{
   font-size: 14px;
 }
 
+.auth-success{
+  color: var(--success);
+  margin-bottom: 10px;
+  font-size: 14px;
+  max-width: 260px;
+  text-align: center;
+}
+
+.auth-links-row{
+  width: 260px;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -4px;
+  margin-bottom: 12px;
+}
+
+.auth-links-row a{
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.auth-divider{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 260px;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 6px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after{
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.google-signin-button{
+  width: 260px;
+  display: flex;
+}
+
 /* ---------- create post ---------- */
 
 .create-post-section{

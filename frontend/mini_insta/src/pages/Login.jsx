@@ -31,6 +31,9 @@ const Login = () => {
       <form onSubmit={handleSubmit}>
         <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <div className='auth-links-row'>
+          <Link to='/forgot-password'>Forgot password?</Link>
+        </div>
         {error && <p className="auth-error">{error}</p>}
         <button type="submit" className="btn-primary">Login</button>
       </form>

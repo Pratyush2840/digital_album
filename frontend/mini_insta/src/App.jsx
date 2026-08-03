@@ -4,6 +4,8 @@ import CreatePost from './pages/CreatePost.jsx'
 import Feed from './pages/feed.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import Landing from './pages/Landing.jsx'
 import Profile from './pages/Profile.jsx'
 import People from './pages/People.jsx'
@@ -26,6 +28,8 @@ const App = () => {
               <Route path='/' element={<Landing />} />
               <Route path='/login' element={<Login />} />
               <Route path='/register' element={<Register />} />
+              <Route path='/forgot-password' element={<ForgotPassword />} />
+              <Route path='/reset-password/:token' element={<ResetPassword />} />
               <Route path='/create-post' element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
               <Route path='/feed' element={<ProtectedRoute><Feed /></ProtectedRoute>} />
               <Route path='/people' element={<ProtectedRoute><People /></ProtectedRoute>} />
