@@ -83,6 +83,22 @@ app.post('/create-post', authMiddleware, upload.single("image"), async (req, res
 });
 
 
+app.get('/posts/:id', async (req, res) => {
+    const post = await postModel.findById(req.params.id)
+        .populate('user', 'username')
+        .populate('comments.user', 'username');
+
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    return res.status(200).json({
+        message: 'Post fetched successfully',
+        post
+    });
+});
+
+
 app.patch('/posts/:id', authMiddleware, async (req, res) => {
     const { caption } = req.body;
     if (typeof caption !== 'string' || !caption.trim()) {
