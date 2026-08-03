@@ -41,7 +41,10 @@ const People = () => {
         {users.map((u) => (
           <div key={u.id} className='user-row'>
             <div className='user-avatar'>{u.username.charAt(0).toUpperCase()}</div>
-            <Link to={`/profile/${u.id}`} className='user-username'>@{u.username}</Link>
+            <Link to={`/profile/${u.id}`} className='user-username'>
+              @{u.username}
+              {u.isPrivate && <span className='profile-private-badge' title='Private account'>🔒</span>}
+            </Link>
             {u.isFollowing ? (
               <button className='btn-secondary' disabled>Following</button>
             ) : u.requestSent ? (

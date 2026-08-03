@@ -14,10 +14,17 @@ const Profile = () => {
   const [nameDraft, setNameDraft] = useState('')
   const [bioDraft, setBioDraft] = useState('')
   const [avatarFile, setAvatarFile] = useState(null)
+  const [privateDraft, setPrivateDraft] = useState(true)
 
   const load = () => {
-    api.get(`/users/${id}`).then((res) => setProfile(res.data.user))
-    api.get(`/users/${id}/posts`).then((res) => setPosts(res.data.posts))
+    api.get(`/users/${id}`).then((res) => {
+      setProfile(res.data.user)
+      if (res.data.user.canViewPosts) {
+        api.get(`/users/${id}/posts`).then((r) => setPosts(r.data.posts))
+      } else {
+        setPosts([])
+      }
+    })
   }
 
   useEffect(() => {
@@ -46,6 +53,7 @@ const Profile = () => {
   const startEditProfile = () => {
     setNameDraft(profile.name || '')
     setBioDraft(profile.bio || '')
+    setPrivateDraft(profile.isPrivate)
     setAvatarFile(null)
     setIsEditing(true)
   }
@@ -55,6 +63,7 @@ const Profile = () => {
     const formData = new FormData()
     formData.append('name', nameDraft)
     formData.append('bio', bioDraft)
+    formData.append('isPrivate', privateDraft)
     if (avatarFile) {
       formData.append('avatar', avatarFile)
     }
@@ -94,7 +103,10 @@ const Profile = () => {
             <div className='profile-avatar'>{profile.username.charAt(0).toUpperCase()}</div>
           )}
           <div>
-            <h2>{profile.name || `@${profile.username}`}</h2>
+            <h2>
+              {profile.name || `@${profile.username}`}
+              {profile.isPrivate && <span className='profile-private-badge' title='Private account'>🔒</span>}
+            </h2>
             {profile.name && <p className='profile-username-sub'>@{profile.username}</p>}
             {profile.bio && <p className='profile-bio'>{profile.bio}</p>}
             <div className='profile-stats'>
@@ -133,6 +145,10 @@ const Profile = () => {
               Avatar
               <input type='file' accept='image/*' onChange={(e) => setAvatarFile(e.target.files[0])} />
             </label>
+            <label className='profile-edit-checkbox'>
+              <input type='checkbox' checked={privateDraft} onChange={(e) => setPrivateDraft(e.target.checked)} />
+              Private account (only followers can see your posts)
+            </label>
             <div className='profile-edit-actions'>
               <button type='submit' className='btn-primary' disabled={busy}>Save</button>
               <button type='button' className='btn-secondary' onClick={() => setIsEditing(false)}>Cancel</button>
@@ -140,19 +156,29 @@ const Profile = () => {
           </form>
         )}
 
-        <div className='profile-posts-grid'>
-          {posts.map((post) => (
-            <div key={post._id} className='profile-post-tile'>
-              <Link to={`/post/${post._id}`}>
-                <img src={post.image} alt={post.caption} />
-              </Link>
-              {isOwnProfile && (
-                <button className='profile-post-delete' onClick={() => handleDeletePost(post._id)}>Delete</button>
-              )}
+        {profile.canViewPosts ? (
+          <>
+            <div className='profile-posts-grid'>
+              {posts.map((post) => (
+                <div key={post._id} className='profile-post-tile'>
+                  <Link to={`/post/${post._id}`}>
+                    <img src={post.image} alt={post.caption} />
+                  </Link>
+                  {isOwnProfile && (
+                    <button className='profile-post-delete' onClick={() => handleDeletePost(post._id)}>Delete</button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        {posts.length === 0 && <p className='empty-state'>No posts yet.</p>}
+            {posts.length === 0 && <p className='empty-state'>No posts yet.</p>}
+          </>
+        ) : (
+          <div className='profile-locked'>
+            <span className='profile-locked-icon'>🔒</span>
+            <p>This account is private.</p>
+            <p className='profile-username-sub'>{profile.requestSent ? 'Your follow request is pending.' : 'Follow this account to see their posts.'}</p>
+          </div>
+        )}
       </section>
     </>
   )

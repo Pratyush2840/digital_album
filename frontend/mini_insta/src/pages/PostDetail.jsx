@@ -9,7 +9,7 @@ const PostDetail = () => {
     const navigate = useNavigate()
     const { user } = useAuth()
     const [post, setPost] = useState(null)
-    const [notFound, setNotFound] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
     const [isSaved, setIsSaved] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [captionDraft, setCaptionDraft] = useState('')
@@ -18,7 +18,9 @@ const PostDetail = () => {
     const loadPost = () => {
         api.get(`/posts/${id}`)
             .then((res) => setPost(res.data.post))
-            .catch(() => setNotFound(true))
+            .catch((err) => {
+                setErrorMessage(err.response?.status === 403 ? 'This account is private.' : 'Post not found.')
+            })
     }
 
     const loadSaved = () => {
@@ -72,12 +74,12 @@ const PostDetail = () => {
             })
     }
 
-    if (notFound) {
+    if (errorMessage) {
         return (
             <>
                 <NavBar />
                 <section className='feed-section'>
-                    <p className='empty-state'>Post not found.</p>
+                    <p className='empty-state'>{errorMessage}</p>
                 </section>
             </>
         )
