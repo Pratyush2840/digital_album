@@ -139,6 +139,7 @@ button{
   width: 100%;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 24px;
   padding: 16px 32px;
   background-color: var(--surface);
@@ -168,6 +169,45 @@ button{
   color: transparent;
   text-decoration: none;
   margin-right: 8px;
+}
+
+.nav-links{
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.nav-link{
+  position: relative;
+  padding-bottom: 2px;
+}
+
+.nav-link.active{
+  color: var(--primary);
+}
+
+.nav-link.active::after{
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--gradient);
+}
+
+@media (max-width: 720px){
+  .nav-bar{
+    padding: 14px 18px;
+    gap: 14px;
+  }
+
+  .nav-links{
+    gap: 14px;
+    font-size: 14px;
+  }
 }
 
 .nav-spacer{
@@ -312,6 +352,12 @@ button{
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
   padding: 20px;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.post-card:hover{
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }
 
 .post-card img{
@@ -520,6 +566,12 @@ button{
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.user-row:hover{
+  border-color: var(--primary);
+  transform: translateY(-1px);
 }
 
 .user-avatar{
@@ -543,6 +595,28 @@ button{
 .empty-state{
   color: var(--text-muted);
   margin-top: 40px;
+}
+
+.spinner-wrap{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 60px;
+  color: var(--text-muted);
+}
+
+.spinner{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin{
+  to{ transform: rotate(360deg); }
 }
 
 /* ---------- profile ---------- */

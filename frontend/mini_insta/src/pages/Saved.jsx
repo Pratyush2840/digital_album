@@ -2,13 +2,16 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
+import Spinner from '../components/Spinner.jsx'
 
 const Saved = () => {
     const [posts, setPosts] = useState([])
+    const [loading, setLoading] = useState(true)
 
     const loadSaved = () => {
         api.get('/users/me/saved')
         .then((res) => setPosts(res.data.posts))
+        .finally(() => setLoading(false))
     }
 
     useEffect(() => {
@@ -25,10 +28,14 @@ const Saved = () => {
             <NavBar />
             <section className='feed-section'>
                 {
-                    posts.length > 0 ? (
+                    loading ? (
+                        <Spinner label='Loading saved posts...' />
+                    ) : posts.length > 0 ? (
                         posts.map((post) => (
                             <div key={post._id} className='post-card'>
-                                <img src={post.image} alt='Post' />
+                                <Link to={`/post/${post._id}`}>
+                                    <img src={post.image} alt='Post' />
+                                </Link>
                                 <div className='post-header'>
                                     {post.user?.username && (
                                         <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>

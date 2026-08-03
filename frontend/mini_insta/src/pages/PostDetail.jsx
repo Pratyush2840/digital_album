@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
+import Spinner from '../components/Spinner.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 const PostDetail = () => {
@@ -90,7 +91,7 @@ const PostDetail = () => {
             <>
                 <NavBar />
                 <section className='feed-section'>
-                    <p className='empty-state'>Loading post...</p>
+                    <Spinner label='Loading post...' />
                 </section>
             </>
         )

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
+import Spinner from '../components/Spinner.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 const Profile = () => {
@@ -84,7 +85,7 @@ const Profile = () => {
       <>
         <NavBar />
         <section className='profile-section'>
-          <p className='empty-state'>Loading profile...</p>
+          <Spinner label='Loading profile...' />
         </section>
       </>
     )

@@ -2,10 +2,12 @@ import React , {useState , useEffect} from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
+import Spinner from '../components/Spinner.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 const Feed = () => {
     const [posts, setposts] = useState([])
+    const [loading, setLoading] = useState(true)
     const [commentDrafts, setCommentDrafts] = useState({})
     const [savedIds, setSavedIds] = useState([])
     const [editingPostId, setEditingPostId] = useState(null)
@@ -17,6 +19,7 @@ const Feed = () => {
         .then((res)=>{
             setposts(res.data.posts)
         })
+        .finally(() => setLoading(false))
     }
 
     const loadSaved = () => {
@@ -90,7 +93,9 @@ const Feed = () => {
       <NavBar />
       <section className='feed-section'>
       {
-        posts.length > 0 ? (
+        loading ? (
+            <Spinner label='Loading feed...' />
+        ) : posts.length > 0 ? (
             posts.map((post) => {
                 const isLiked = user && post.likes?.some((id) => id === user.id)
                 const isSaved = savedIds.includes(post._id)
@@ -171,7 +176,7 @@ const Feed = () => {
                 )
             })
         ) : (
-            <p>No posts available.</p>
+            <p className='empty-state'>No posts available.</p>
         )
       }
 
