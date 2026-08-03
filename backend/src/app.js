@@ -15,6 +15,13 @@ app.use(express.json());
 
 const upload =  multer({storage: multer.memoryStorage()});
 
+function isVisibleToViewer(owner, viewerId) {
+    if (!owner) return false;
+    if (owner._id.toString() === viewerId) return true;
+    if (!owner.isPrivate) return true;
+    return owner.followers.some((id) => id.toString() === viewerId);
+}
+
 
 app.post('/auth/register', async (req, res) => {
     const { username, password } = req.body;
@@ -83,18 +90,25 @@ app.post('/create-post', authMiddleware, upload.single("image"), async (req, res
 });
 
 
-app.get('/posts/:id', async (req, res) => {
+app.get('/posts/:id', authMiddleware, async (req, res) => {
     const post = await postModel.findById(req.params.id)
-        .populate('user', 'username')
+        .populate('user', 'username isPrivate followers')
         .populate('comments.user', 'username');
 
     if (!post) {
         return res.status(404).json({ message: 'Post not found' });
     }
 
+    if (!isVisibleToViewer(post.user, req.user.id)) {
+        return res.status(403).json({ message: 'This account is private' });
+    }
+
+    const postObj = post.toObject();
+    postObj.user = { _id: postObj.user._id, username: postObj.user.username };
+
     return res.status(200).json({
         message: 'Post fetched successfully',
-        post
+        post: postObj
     });
 });
 
@@ -140,14 +154,23 @@ app.delete('/posts/:id', authMiddleware, async (req, res) => {
 });
 
 
-app.get('/posts', async (req, res) => {
+app.get('/posts', authMiddleware, async (req, res) => {
         const posts=await postModel.find()
             .sort({ createdAt: -1 })
-            .populate('user', 'username')
+            .populate('user', 'username isPrivate followers')
             .populate('comments.user', 'username');
+
+        const visiblePosts = posts
+            .filter((post) => isVisibleToViewer(post.user, req.user.id))
+            .map((post) => {
+                const postObj = post.toObject();
+                postObj.user = { _id: postObj.user._id, username: postObj.user.username };
+                return postObj;
+            });
+
         return res.status(200).json({
             message:"Posts fetched successfully",
-            posts
+            posts: visiblePosts
         })
 })
 
@@ -155,6 +178,11 @@ app.post('/posts/:id/like', authMiddleware, async (req, res) => {
     const post = await postModel.findById(req.params.id);
     if (!post) {
         return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const owner = await userModel.findById(post.user).select('isPrivate followers');
+    if (!isVisibleToViewer(owner, req.user.id)) {
+        return res.status(403).json({ message: 'This account is private' });
     }
 
     const userId = req.user.id;
@@ -186,6 +214,11 @@ app.post('/posts/:id/comments', authMiddleware, async (req, res) => {
         return res.status(404).json({ message: 'Post not found' });
     }
 
+    const owner = await userModel.findById(post.user).select('isPrivate followers');
+    if (!isVisibleToViewer(owner, req.user.id)) {
+        return res.status(403).json({ message: 'This account is private' });
+    }
+
     post.comments.push({ user: req.user.id, text: text.trim() });
     await post.save();
     await post.populate('comments.user', 'username');
@@ -201,6 +234,11 @@ app.post('/posts/:id/save', authMiddleware, async (req, res) => {
     const post = await postModel.findById(req.params.id);
     if (!post) {
         return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const owner = await userModel.findById(post.user).select('isPrivate followers');
+    if (!isVisibleToViewer(owner, req.user.id)) {
+        return res.status(403).json({ message: 'This account is private' });
     }
 
     const currentUser = await userModel.findById(req.user.id);
@@ -369,12 +407,13 @@ app.get('/users/search', authMiddleware, async (req, res) => {
         ...(query ? { username: { $regex: query, $options: 'i' } } : {})
     };
 
-    const users = await userModel.find(filter).select('username followers followRequests').limit(20);
+    const users = await userModel.find(filter).select('username isPrivate followers followRequests').limit(20);
     return res.status(200).json({
         message: 'Users fetched successfully',
         users: users.map((u) => ({
             id: u._id,
             username: u.username,
+            isPrivate: u.isPrivate,
             isFollowing: u.followers.some((id) => id.toString() === req.user.id),
             requestSent: u.followRequests.some((id) => id.toString() === req.user.id)
         }))
@@ -391,6 +430,9 @@ app.patch('/users/me', authMiddleware, upload.single('avatar'), async (req, res)
     if (typeof req.body.bio === 'string') {
         currentUser.bio = req.body.bio.trim();
     }
+    if (typeof req.body.isPrivate === 'string') {
+        currentUser.isPrivate = req.body.isPrivate === 'true';
+    }
     if (req.file) {
         const result = await uploadFile(req.file.buffer);
         currentUser.avatar = result.url;
@@ -405,14 +447,15 @@ app.patch('/users/me', authMiddleware, upload.single('avatar'), async (req, res)
             username: currentUser.username,
             name: currentUser.name,
             bio: currentUser.bio,
-            avatar: currentUser.avatar
+            avatar: currentUser.avatar,
+            isPrivate: currentUser.isPrivate
         }
     });
 });
 
 
 app.get('/users/:id', authMiddleware, async (req, res) => {
-    const user = await userModel.findById(req.params.id).select('username name bio avatar followers following followRequests');
+    const user = await userModel.findById(req.params.id).select('username name bio avatar isPrivate followers following followRequests');
     if (!user) {
         return res.status(404).json({ message: 'User not found' });
     }
@@ -420,6 +463,7 @@ app.get('/users/:id', authMiddleware, async (req, res) => {
     const isSelf = user._id.toString() === req.user.id;
     const isFollowing = user.followers.some((id) => id.toString() === req.user.id);
     const requestSent = user.followRequests.some((id) => id.toString() === req.user.id);
+    const canViewPosts = isSelf || !user.isPrivate || isFollowing;
 
     return res.status(200).json({
         message: 'User fetched successfully',
@@ -429,17 +473,28 @@ app.get('/users/:id', authMiddleware, async (req, res) => {
             name: user.name,
             bio: user.bio,
             avatar: user.avatar,
+            isPrivate: user.isPrivate,
             followersCount: user.followers.length,
             followingCount: user.following.length,
             isSelf,
             isFollowing,
-            requestSent
+            requestSent,
+            canViewPosts
         }
     });
 });
 
 
 app.get('/users/:id/posts', authMiddleware, async (req, res) => {
+    const owner = await userModel.findById(req.params.id).select('isPrivate followers');
+    if (!owner) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!isVisibleToViewer(owner, req.user.id)) {
+        return res.status(403).json({ message: 'This account is private' });
+    }
+
     const posts = await postModel.find({ user: req.params.id })
         .sort({ createdAt: -1 })
         .populate('user', 'username')
