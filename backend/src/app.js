@@ -8,8 +8,11 @@ const userModel=require('./models/user.model.js');
 const messageModel=require('./models/message.model.js');
 const { hashPassword, comparePassword, generateToken } = require('./services/auth.service.js');
 const { sendPasswordResetEmail } = require('./services/email.service.js');
+const { OAuth2Client } = require('google-auth-library');
 const cors = require('cors');
 const authMiddleware = require('./middlewares/auth.middleware.js');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 app.use(cors());
 
@@ -147,6 +150,62 @@ app.post('/auth/reset-password/:token', async (req, res) => {
     await user.save();
 
     return res.status(200).json({ message: 'Password reset successfully. You can now log in.' });
+});
+
+
+app.post('/auth/google', async (req, res) => {
+    const { credential } = req.body;
+    if (!credential) {
+        return res.status(400).json({ message: 'Google credential is required' });
+    }
+
+    let payload;
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        payload = ticket.getPayload();
+    } catch (err) {
+        return res.status(401).json({ message: 'Invalid Google credential' });
+    }
+
+    let user = await userModel.findOne({ googleId: payload.sub });
+
+    if (!user) {
+        user = await userModel.findOne({ email: payload.email.toLowerCase() });
+        if (user) {
+            user.googleId = payload.sub;
+            if (!user.avatar) user.avatar = payload.picture;
+            await user.save();
+        }
+    }
+
+    if (!user) {
+        let baseUsername = payload.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        let username = baseUsername;
+        let suffix = 0;
+        while (await userModel.findOne({ username })) {
+            suffix += 1;
+            username = `${baseUsername}${suffix}`;
+        }
+
+        user = await userModel.create({
+            username,
+            email: payload.email.toLowerCase(),
+            googleId: payload.sub,
+            name: payload.name || '',
+            avatar: payload.picture || ''
+        });
+    }
+
+    const token = generateToken(user);
+
+    return res.status(200).json({
+        message: 'Logged in with Google successfully',
+        token,
+        user: { id: user._id, username: user.username }
+    });
 });
 
 
