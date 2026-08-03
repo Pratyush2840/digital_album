@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import ThemeToggle from '../components/ThemeToggle.jsx'
+import GoogleSignInButton from '../components/GoogleSignInButton.jsx'
 
 const Register = () => {
   const [username, setUsername] = useState('')
@@ -36,6 +37,8 @@ const Register = () => {
         {error && <p className="auth-error">{error}</p>}
         <button type="submit" className="btn-primary">Register</button>
       </form>
+      <div className='auth-divider'>or</div>
+      <GoogleSignInButton onError={setError} />
       <p>Already have an account? <Link to="/login">Login</Link></p>
     </section>
   )
