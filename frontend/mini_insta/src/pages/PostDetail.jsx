@@ -65,6 +65,10 @@ const PostDetail = () => {
         api.delete(`/posts/${id}/comments/${commentId}`).then(loadPost)
     }
 
+    const handleCommentLike = (commentId) => {
+        api.post(`/posts/${id}/comments/${commentId}/like`).then(loadPost)
+    }
+
     const handleCommentSubmit = (e) => {
         e.preventDefault()
         if (!commentDraft.trim()) return
@@ -150,9 +154,16 @@ const PostDetail = () => {
                     <div className='post-comments'>
                         {post.comments?.map((comment) => {
                             const canDelete = user && (comment.user?._id === user.id || isOwner)
+                            const commentLiked = user && comment.likes?.some((likeId) => likeId === user.id)
                             return (
                                 <p key={comment._id} className='post-comment'>
                                     <strong>@{comment.user?.username}</strong> {comment.text}
+                                    <button
+                                        className={commentLiked ? 'comment-like-button liked' : 'comment-like-button'}
+                                        onClick={() => handleCommentLike(comment._id)}
+                                    >
+                                        {commentLiked ? '♥' : '♡'} {comment.likes?.length || 0}
+                                    </button>
                                     {canDelete && (
                                         <button
                                             className='comment-delete-button'

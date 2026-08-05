@@ -131,6 +131,11 @@ const Feed = () => {
         .then(() => refreshPost(postId))
     }
 
+    const handleCommentLike = (postId, commentId) => {
+        api.post(`/posts/${postId}/comments/${commentId}/like`)
+        .then(() => refreshPost(postId))
+    }
+
     const handleCommentSubmit = (e, postId) => {
         e.preventDefault()
         const text = commentDrafts[postId]
@@ -203,9 +208,16 @@ const Feed = () => {
                         <div className='post-comments'>
                             {post.comments?.map((comment) => {
                                 const canDelete = user && (comment.user?._id === user.id || post.user?._id === user.id)
+                                const commentLiked = user && comment.likes?.some((id) => id === user.id)
                                 return (
                                     <p key={comment._id} className='post-comment'>
                                         <strong>@{comment.user?.username}</strong> {comment.text}
+                                        <button
+                                            className={commentLiked ? 'comment-like-button liked' : 'comment-like-button'}
+                                            onClick={() => handleCommentLike(post._id, comment._id)}
+                                        >
+                                            {commentLiked ? '♥' : '♡'} {comment.likes?.length || 0}
+                                        </button>
                                         {canDelete && (
                                             <button
                                                 className='comment-delete-button'
