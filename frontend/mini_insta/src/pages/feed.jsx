@@ -1,25 +1,59 @@
-import React , {useState , useEffect} from 'react'
+import React , {useState , useEffect, useRef, useCallback} from 'react'
 import { Link } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
+const PAGE_SIZE = 10
+
 const Feed = () => {
     const [posts, setposts] = useState([])
     const [loading, setLoading] = useState(true)
+    const [loadingMore, setLoadingMore] = useState(false)
+    const [page, setPage] = useState(1)
+    const [hasMore, setHasMore] = useState(false)
     const [commentDrafts, setCommentDrafts] = useState({})
     const [savedIds, setSavedIds] = useState([])
     const [editingPostId, setEditingPostId] = useState(null)
     const [captionDraft, setCaptionDraft] = useState('')
     const { user } = useAuth()
+    const sentinelRef = useRef(null)
+    const loadingMoreRef = useRef(false)
 
-    const loadPosts = () => {
-        api.get('/posts')
-        .then((res)=>{
+    const loadInitial = () => {
+        setLoading(true)
+        api.get('/posts', { params: { page: 1, limit: PAGE_SIZE } })
+        .then((res) => {
             setposts(res.data.posts)
+            setPage(1)
+            setHasMore(res.data.hasMore)
         })
         .finally(() => setLoading(false))
+    }
+
+    const loadMore = useCallback(() => {
+        if (loadingMoreRef.current) return
+        loadingMoreRef.current = true
+        setLoadingMore(true)
+        const nextPage = page + 1
+        api.get('/posts', { params: { page: nextPage, limit: PAGE_SIZE } })
+        .then((res) => {
+            setposts((prev) => [...prev, ...res.data.posts])
+            setPage(nextPage)
+            setHasMore(res.data.hasMore)
+        })
+        .finally(() => {
+            loadingMoreRef.current = false
+            setLoadingMore(false)
+        })
+    }, [page])
+
+    const refreshPost = (postId) => {
+        api.get(`/posts/${postId}`)
+        .then((res) => {
+            setposts((prev) => prev.map((p) => (p._id === postId ? res.data.post : p)))
+        })
     }
 
     const loadSaved = () => {
@@ -28,9 +62,24 @@ const Feed = () => {
     }
 
     useEffect(() => {
-        loadPosts()
+        loadInitial()
         loadSaved()
     } , [])
+
+    useEffect(() => {
+        if (!hasMore) return
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                loadMore()
+            }
+        }, { rootMargin: '200px' })
+
+        const node = sentinelRef.current
+        if (node) observer.observe(node)
+        return () => {
+            if (node) observer.unobserve(node)
+        }
+    }, [hasMore, loadMore])
 
     const handleSave = (postId) => {
         api.post(`/posts/${postId}/save`)
@@ -39,13 +88,13 @@ const Feed = () => {
 
     const handleLike = (postId) => {
         api.post(`/posts/${postId}/like`)
-        .then(() => loadPosts())
+        .then(() => refreshPost(postId))
     }
 
     const handleDelete = (postId) => {
         if (!window.confirm('Delete this post?')) return
         api.delete(`/posts/${postId}`)
-        .then(() => loadPosts())
+        .then(() => setposts((prev) => prev.filter((p) => p._id !== postId)))
     }
 
     const startEdit = (post) => {
@@ -64,7 +113,7 @@ const Feed = () => {
         .then(() => {
             setEditingPostId(null)
             setCaptionDraft('')
-            loadPosts()
+            refreshPost(postId)
         })
     }
 
@@ -74,7 +123,7 @@ const Feed = () => {
 
     const handleCommentDelete = (postId, commentId) => {
         api.delete(`/posts/${postId}/comments/${commentId}`)
-        .then(() => loadPosts())
+        .then(() => refreshPost(postId))
     }
 
     const handleCommentSubmit = (e, postId) => {
@@ -84,7 +133,7 @@ const Feed = () => {
         api.post(`/posts/${postId}/comments`, { text })
         .then(() => {
             setCommentDrafts((prev) => ({ ...prev, [postId]: '' }))
-            loadPosts()
+            refreshPost(postId)
         })
     }
 
@@ -96,7 +145,8 @@ const Feed = () => {
         loading ? (
             <Spinner label='Loading feed...' />
         ) : posts.length > 0 ? (
-            posts.map((post) => {
+            <>
+            {posts.map((post) => {
                 const isLiked = user && post.likes?.some((id) => id === user.id)
                 const isSaved = savedIds.includes(post._id)
                 return (
@@ -174,7 +224,11 @@ const Feed = () => {
                         </form>
                     </div>
                 )
-            })
+            })}
+            <div ref={sentinelRef} />
+            {loadingMore && <Spinner label='Loading more...' />}
+            {!hasMore && <p className='empty-state'>You're all caught up.</p>}
+            </>
         ) : (
             <p className='empty-state'>No posts available.</p>
         )
