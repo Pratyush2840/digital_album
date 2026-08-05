@@ -228,7 +228,8 @@ app.post('/create-post', authMiddleware, upload.single("image"), async (req, res
 app.get('/posts/:id', authMiddleware, async (req, res) => {
     const post = await postModel.findById(req.params.id)
         .populate('user', 'username isPrivate followers')
-        .populate('comments.user', 'username');
+        .populate('comments.user', 'username')
+        .populate('comments.replies.user', 'username');
 
     if (!post) {
         return res.status(404).json({ message: 'Post not found' });
@@ -301,7 +302,8 @@ app.get('/users/me/archived', authMiddleware, async (req, res) => {
     const posts = await postModel.find({ user: req.user.id, isArchived: true })
         .sort({ createdAt: -1 })
         .populate('user', 'username')
-        .populate('comments.user', 'username');
+        .populate('comments.user', 'username')
+        .populate('comments.replies.user', 'username');
 
     return res.status(200).json({
         message: 'Archived posts fetched successfully',
@@ -334,7 +336,8 @@ app.get('/posts', authMiddleware, async (req, res) => {
         const posts=await postModel.find({ isArchived: { $ne: true } })
             .sort({ createdAt: -1 })
             .populate('user', 'username isPrivate followers')
-            .populate('comments.user', 'username');
+            .populate('comments.user', 'username')
+        .populate('comments.replies.user', 'username');
 
         const visiblePosts = posts
             .filter((post) => isVisibleToViewer(post.user, req.user.id))
@@ -400,7 +403,10 @@ app.post('/posts/:id/comments', authMiddleware, async (req, res) => {
 
     post.comments.push({ user: req.user.id, text: text.trim() });
     await post.save();
-    await post.populate('comments.user', 'username');
+    await post.populate([
+        { path: 'comments.user', select: 'username' },
+        { path: 'comments.replies.user', select: 'username' }
+    ]);
 
     return res.status(201).json({
         message: 'Comment added successfully',
@@ -443,7 +449,8 @@ app.get('/users/me/saved', authMiddleware, async (req, res) => {
         path: 'savedPosts',
         populate: [
             { path: 'user', select: 'username' },
-            { path: 'comments.user', select: 'username' }
+            { path: 'comments.user', select: 'username' },
+            { path: 'comments.replies.user', select: 'username' }
         ]
     });
 
@@ -480,7 +487,10 @@ app.post('/posts/:id/comments/:commentId/like', authMiddleware, async (req, res)
     }
 
     await post.save();
-    await post.populate('comments.user', 'username');
+    await post.populate([
+        { path: 'comments.user', select: 'username' },
+        { path: 'comments.replies.user', select: 'username' }
+    ]);
 
     return res.status(200).json({
         message: alreadyLiked ? 'Comment unliked' : 'Comment liked',
@@ -508,10 +518,84 @@ app.delete('/posts/:id/comments/:commentId', authMiddleware, async (req, res) =>
 
     comment.deleteOne();
     await post.save();
-    await post.populate('comments.user', 'username');
+    await post.populate([
+        { path: 'comments.user', select: 'username' },
+        { path: 'comments.replies.user', select: 'username' }
+    ]);
 
     return res.status(200).json({
         message: 'Comment deleted successfully',
+        comments: post.comments
+    });
+});
+
+
+app.post('/posts/:id/comments/:commentId/replies', authMiddleware, async (req, res) => {
+    const { text } = req.body;
+    if (!text || !text.trim()) {
+        return res.status(400).json({ message: 'Reply text is required' });
+    }
+
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const owner = await userModel.findById(post.user).select('isPrivate followers');
+    if (!isVisibleToViewer(owner, req.user.id)) {
+        return res.status(403).json({ message: 'This account is private' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+        return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    comment.replies.push({ user: req.user.id, text: text.trim() });
+    await post.save();
+    await post.populate([
+        { path: 'comments.user', select: 'username' },
+        { path: 'comments.replies.user', select: 'username' }
+    ]);
+
+    return res.status(201).json({
+        message: 'Reply added successfully',
+        comments: post.comments
+    });
+});
+
+
+app.delete('/posts/:id/comments/:commentId/replies/:replyId', authMiddleware, async (req, res) => {
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+        return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    const reply = comment.replies.id(req.params.replyId);
+    if (!reply) {
+        return res.status(404).json({ message: 'Reply not found' });
+    }
+
+    const isReplyAuthor = reply.user.toString() === req.user.id;
+    const isPostOwner = post.user.toString() === req.user.id;
+    if (!isReplyAuthor && !isPostOwner) {
+        return res.status(403).json({ message: 'You can only delete your own replies' });
+    }
+
+    reply.deleteOne();
+    await post.save();
+    await post.populate([
+        { path: 'comments.user', select: 'username' },
+        { path: 'comments.replies.user', select: 'username' }
+    ]);
+
+    return res.status(200).json({
+        message: 'Reply deleted successfully',
         comments: post.comments
     });
 });
@@ -712,7 +796,8 @@ app.get('/users/:id/posts', authMiddleware, async (req, res) => {
     const posts = await postModel.find({ user: req.params.id, isArchived: { $ne: true } })
         .sort({ createdAt: -1 })
         .populate('user', 'username')
-        .populate('comments.user', 'username');
+        .populate('comments.user', 'username')
+        .populate('comments.replies.user', 'username');
 
     return res.status(200).json({
         message: 'Posts fetched successfully',
