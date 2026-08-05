@@ -97,6 +97,11 @@ const Feed = () => {
         .then(() => setposts((prev) => prev.filter((p) => p._id !== postId)))
     }
 
+    const handleArchive = (postId) => {
+        api.patch(`/posts/${postId}/archive`)
+        .then(() => setposts((prev) => prev.filter((p) => p._id !== postId)))
+    }
+
     const startEdit = (post) => {
         setEditingPostId(post._id)
         setCaptionDraft(post.caption || '')
@@ -161,6 +166,7 @@ const Feed = () => {
                             {user && post.user?._id === user.id && (
                                 <div className='post-owner-actions'>
                                     <button className='post-edit-button' onClick={() => startEdit(post)}>Edit</button>
+                                    <button className='post-edit-button' onClick={() => handleArchive(post._id)}>Archive</button>
                                     <button className='post-delete-button' onClick={() => handleDelete(post._id)}>Delete</button>
                                 </div>
                             )}

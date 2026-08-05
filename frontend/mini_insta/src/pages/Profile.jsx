@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
 import Spinner from '../components/Spinner.jsx'
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 
 const Profile = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { user: currentUser } = useAuth()
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
@@ -49,6 +50,10 @@ const Profile = () => {
   const handleDeletePost = (postId) => {
     if (!window.confirm('Delete this post?')) return
     api.delete(`/posts/${postId}`).then(load)
+  }
+
+  const handleArchivePost = (postId) => {
+    api.patch(`/posts/${postId}/archive`).then(load)
   }
 
   const startEditProfile = () => {
@@ -115,8 +120,9 @@ const Profile = () => {
               <span>{profile.followingCount} following</span>
             </div>
             {isOwnProfile ? (
-              <div style={{ marginTop: 14 }}>
+              <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
                 <button className='btn-secondary' onClick={startEditProfile}>Edit Profile</button>
+                <button className='btn-secondary' onClick={() => navigate('/archived')}>View Archived</button>
               </div>
             ) : (
               <div style={{ marginTop: 14 }}>
@@ -166,7 +172,10 @@ const Profile = () => {
                     <img src={post.image} alt={post.caption} />
                   </Link>
                   {isOwnProfile && (
-                    <button className='profile-post-delete' onClick={() => handleDeletePost(post._id)}>Delete</button>
+                    <div className='profile-post-actions'>
+                      <button className='profile-post-archive' onClick={() => handleArchivePost(post._id)}>Archive</button>
+                      <button className='profile-post-delete' onClick={() => handleDeletePost(post._id)}>Delete</button>
+                    </div>
                   )}
                 </div>
               ))}

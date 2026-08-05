@@ -13,6 +13,7 @@ import FollowRequests from './pages/FollowRequests.jsx'
 import Saved from './pages/Saved.jsx'
 import PostDetail from './pages/PostDetail.jsx'
 import Chat from './pages/Chat.jsx'
+import Archived from './pages/Archived.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
@@ -39,6 +40,7 @@ const App = () => {
               <Route path='/profile/:id' element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path='/chat' element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path='/chat/:userId' element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+              <Route path='/archived' element={<ProtectedRoute><Archived /></ProtectedRoute>} />
             </Routes>
           </Router>
         </SocketProvider>
