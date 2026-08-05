@@ -15,6 +15,8 @@ const PostDetail = () => {
     const [isEditing, setIsEditing] = useState(false)
     const [captionDraft, setCaptionDraft] = useState('')
     const [commentDraft, setCommentDraft] = useState('')
+    const [replyDrafts, setReplyDrafts] = useState({})
+    const [openReplyId, setOpenReplyId] = useState(null)
 
     const loadPost = () => {
         api.get(`/posts/${id}`)
@@ -77,6 +79,30 @@ const PostDetail = () => {
                 setCommentDraft('')
                 loadPost()
             })
+    }
+
+    const toggleReplyBox = (commentId) => {
+        setOpenReplyId((prev) => (prev === commentId ? null : commentId))
+    }
+
+    const handleReplyChange = (commentId, value) => {
+        setReplyDrafts((prev) => ({ ...prev, [commentId]: value }))
+    }
+
+    const handleReplySubmit = (e, commentId) => {
+        e.preventDefault()
+        const text = replyDrafts[commentId]
+        if (!text || !text.trim()) return
+        api.post(`/posts/${id}/comments/${commentId}/replies`, { text })
+            .then(() => {
+                setReplyDrafts((prev) => ({ ...prev, [commentId]: '' }))
+                setOpenReplyId(null)
+                loadPost()
+            })
+    }
+
+    const handleReplyDelete = (commentId, replyId) => {
+        api.delete(`/posts/${id}/comments/${commentId}/replies/${replyId}`).then(loadPost)
     }
 
     if (errorMessage) {
@@ -156,23 +182,67 @@ const PostDetail = () => {
                             const canDelete = user && (comment.user?._id === user.id || isOwner)
                             const commentLiked = user && comment.likes?.some((likeId) => likeId === user.id)
                             return (
-                                <p key={comment._id} className='post-comment'>
-                                    <strong>@{comment.user?.username}</strong> {comment.text}
-                                    <button
-                                        className={commentLiked ? 'comment-like-button liked' : 'comment-like-button'}
-                                        onClick={() => handleCommentLike(comment._id)}
-                                    >
-                                        {commentLiked ? '♥' : '♡'} {comment.likes?.length || 0}
-                                    </button>
-                                    {canDelete && (
+                                <div key={comment._id} className='post-comment-block'>
+                                    <p className='post-comment'>
+                                        <strong>@{comment.user?.username}</strong> {comment.text}
                                         <button
-                                            className='comment-delete-button'
-                                            onClick={() => handleCommentDelete(comment._id)}
+                                            className={commentLiked ? 'comment-like-button liked' : 'comment-like-button'}
+                                            onClick={() => handleCommentLike(comment._id)}
                                         >
-                                            ✕
+                                            {commentLiked ? '♥' : '♡'} {comment.likes?.length || 0}
                                         </button>
+                                        <button
+                                            className='comment-reply-button'
+                                            onClick={() => toggleReplyBox(comment._id)}
+                                        >
+                                            Reply
+                                        </button>
+                                        {canDelete && (
+                                            <button
+                                                className='comment-delete-button'
+                                                onClick={() => handleCommentDelete(comment._id)}
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </p>
+
+                                    {comment.replies?.length > 0 && (
+                                        <div className='comment-replies'>
+                                            {comment.replies.map((reply) => {
+                                                const canDeleteReply = user && (reply.user?._id === user.id || isOwner)
+                                                return (
+                                                    <p key={reply._id} className='post-comment reply'>
+                                                        <strong>@{reply.user?.username}</strong> {reply.text}
+                                                        {canDeleteReply && (
+                                                            <button
+                                                                className='comment-delete-button'
+                                                                onClick={() => handleReplyDelete(comment._id, reply._id)}
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        )}
+                                                    </p>
+                                                )
+                                            })}
+                                        </div>
                                     )}
-                                </p>
+
+                                    {openReplyId === comment._id && (
+                                        <form
+                                            className='comment-form reply-form'
+                                            onSubmit={(e) => handleReplySubmit(e, comment._id)}
+                                        >
+                                            <input
+                                                type='text'
+                                                placeholder={`Reply to @${comment.user?.username}...`}
+                                                value={replyDrafts[comment._id] || ''}
+                                                onChange={(e) => handleReplyChange(comment._id, e.target.value)}
+                                            />
+                                            <button type='submit'>Reply</button>
+                                        </form>
+                                    )}
+                                </div>
                             )
                         })}
                     </div>

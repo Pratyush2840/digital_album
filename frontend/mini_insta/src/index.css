@@ -566,6 +566,44 @@ button{
   color: var(--danger);
 }
 
+.comment-reply-button{
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.comment-reply-button:hover{
+  color: var(--primary);
+}
+
+.post-comment-block{
+  margin-bottom: 6px;
+}
+
+.post-comment-block .post-comment{
+  margin-bottom: 2px;
+}
+
+.comment-replies{
+  margin-left: 20px;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+.post-comment.reply{
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.reply-form{
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
 .comment-form{
   display: flex;
   gap: 8px;
