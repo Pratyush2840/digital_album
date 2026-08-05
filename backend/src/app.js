@@ -454,6 +454,41 @@ app.get('/users/me/saved', authMiddleware, async (req, res) => {
 });
 
 
+app.post('/posts/:id/comments/:commentId/like', authMiddleware, async (req, res) => {
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const owner = await userModel.findById(post.user).select('isPrivate followers');
+    if (!isVisibleToViewer(owner, req.user.id)) {
+        return res.status(403).json({ message: 'This account is private' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+        return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    const userId = req.user.id;
+    const alreadyLiked = comment.likes.some((id) => id.toString() === userId);
+
+    if (alreadyLiked) {
+        comment.likes = comment.likes.filter((id) => id.toString() !== userId);
+    } else {
+        comment.likes.push(userId);
+    }
+
+    await post.save();
+    await post.populate('comments.user', 'username');
+
+    return res.status(200).json({
+        message: alreadyLiked ? 'Comment unliked' : 'Comment liked',
+        comments: post.comments
+    });
+});
+
+
 app.delete('/posts/:id/comments/:commentId', authMiddleware, async (req, res) => {
     const post = await postModel.findById(req.params.id);
     if (!post) {
