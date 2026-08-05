@@ -234,6 +234,10 @@ app.get('/posts/:id', authMiddleware, async (req, res) => {
         return res.status(404).json({ message: 'Post not found' });
     }
 
+    if (post.isArchived && post.user._id.toString() !== req.user.id) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
     if (!isVisibleToViewer(post.user, req.user.id)) {
         return res.status(403).json({ message: 'This account is private' });
     }
@@ -273,6 +277,39 @@ app.patch('/posts/:id', authMiddleware, async (req, res) => {
 });
 
 
+app.patch('/posts/:id/archive', authMiddleware, async (req, res) => {
+    const post = await postModel.findById(req.params.id);
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.user.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'You can only archive your own posts' });
+    }
+
+    post.isArchived = !post.isArchived;
+    await post.save();
+
+    return res.status(200).json({
+        message: post.isArchived ? 'Post archived' : 'Post unarchived',
+        post
+    });
+});
+
+
+app.get('/users/me/archived', authMiddleware, async (req, res) => {
+    const posts = await postModel.find({ user: req.user.id, isArchived: true })
+        .sort({ createdAt: -1 })
+        .populate('user', 'username')
+        .populate('comments.user', 'username');
+
+    return res.status(200).json({
+        message: 'Archived posts fetched successfully',
+        posts
+    });
+});
+
+
 app.delete('/posts/:id', authMiddleware, async (req, res) => {
     const post = await postModel.findById(req.params.id);
     if (!post) {
@@ -294,7 +331,7 @@ app.get('/posts', authMiddleware, async (req, res) => {
         const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 50);
         const skip = (page - 1) * limit;
 
-        const posts=await postModel.find()
+        const posts=await postModel.find({ isArchived: { $ne: true } })
             .sort({ createdAt: -1 })
             .populate('user', 'username isPrivate followers')
             .populate('comments.user', 'username');
@@ -637,7 +674,7 @@ app.get('/users/:id/posts', authMiddleware, async (req, res) => {
         return res.status(403).json({ message: 'This account is private' });
     }
 
-    const posts = await postModel.find({ user: req.params.id })
+    const posts = await postModel.find({ user: req.params.id, isArchived: { $ne: true } })
         .sort({ createdAt: -1 })
         .populate('user', 'username')
         .populate('comments.user', 'username');

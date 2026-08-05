@@ -10,7 +10,8 @@ const postSchema = new mongoose.Schema({
     caption : String,
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    comments: [commentSchema]
+    comments: [commentSchema],
+    isArchived: { type: Boolean, default: false }
 }, { timestamps: true });
 
 const Post = mongoose.model("Post", postSchema);
