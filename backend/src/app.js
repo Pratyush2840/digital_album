@@ -290,6 +290,10 @@ app.delete('/posts/:id', authMiddleware, async (req, res) => {
 
 
 app.get('/posts', authMiddleware, async (req, res) => {
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 50);
+        const skip = (page - 1) * limit;
+
         const posts=await postModel.find()
             .sort({ createdAt: -1 })
             .populate('user', 'username isPrivate followers')
@@ -303,9 +307,12 @@ app.get('/posts', authMiddleware, async (req, res) => {
                 return postObj;
             });
 
+        const pagePosts = visiblePosts.slice(skip, skip + limit);
+
         return res.status(200).json({
             message:"Posts fetched successfully",
-            posts: visiblePosts
+            posts: pagePosts,
+            hasMore: skip + limit < visiblePosts.length
         })
 })
 
