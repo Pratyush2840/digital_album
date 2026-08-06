@@ -209,10 +209,17 @@ app.post('/auth/google', async (req, res) => {
 });
 
 
-app.post('/create-post', authMiddleware, upload.single("image"), async (req, res) => {
-    const result=await uploadFile(req.file.buffer);
+app.post('/create-post', authMiddleware, upload.array("images", 10), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: 'At least one image is required' });
+    }
+
+    const uploaded = await Promise.all(req.files.map((file) => uploadFile(file.buffer)));
+    const imageUrls = uploaded.map((result) => result.url);
+
     const post=await postModel.create({
-        image:result.url,
+        image: imageUrls[0],
+        images: imageUrls,
         caption:req.body.caption,
         user:req.user.id
     })
