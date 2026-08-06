@@ -28,6 +28,10 @@ function isVisibleToViewer(owner, viewerId) {
     return owner.followers.some((id) => id.toString() === viewerId);
 }
 
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function areMutualFollowers(userIdA, userIdB) {
     const [userA, userB] = await Promise.all([
         userModel.findById(userIdA).select('following'),
@@ -362,6 +366,36 @@ app.get('/posts', authMiddleware, async (req, res) => {
             hasMore: skip + limit < visiblePosts.length
         })
 })
+
+
+app.get('/hashtags/:tag', authMiddleware, async (req, res) => {
+    const tag = req.params.tag.trim();
+    if (!tag) {
+        return res.status(400).json({ message: 'Hashtag is required' });
+    }
+
+    const posts = await postModel.find({
+        isArchived: { $ne: true },
+        caption: { $regex: `#${escapeRegex(tag)}\\b`, $options: 'i' }
+    })
+        .sort({ createdAt: -1 })
+        .populate('user', 'username isPrivate followers')
+        .populate('comments.user', 'username');
+
+    const visiblePosts = posts
+        .filter((post) => isVisibleToViewer(post.user, req.user.id))
+        .map((post) => {
+            const postObj = post.toObject();
+            postObj.user = { _id: postObj.user._id, username: postObj.user.username };
+            return postObj;
+        });
+
+    return res.status(200).json({
+        message: 'Posts fetched successfully',
+        posts: visiblePosts
+    });
+});
+
 
 app.post('/posts/:id/like', authMiddleware, async (req, res) => {
     const post = await postModel.findById(req.params.id);
