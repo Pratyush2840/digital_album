@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
 
 const People = () => {
-  const [query, setQuery] = useState('')
+  const [searchParams] = useSearchParams()
+  const initialQuery = searchParams.get('q') || ''
+  const [query, setQuery] = useState(initialQuery)
   const [users, setUsers] = useState([])
 
   const search = (q) => {
@@ -12,8 +14,8 @@ const People = () => {
   }
 
   useEffect(() => {
-    search('')
-  }, [])
+    search(initialQuery)
+  }, [initialQuery])
 
   const handleChange = (e) => {
     const value = e.target.value

@@ -476,6 +476,18 @@ button{
   background: #fff;
 }
 
+.caption-hashtag,
+.caption-mention{
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.caption-hashtag:hover,
+.caption-mention:hover{
+  text-decoration: underline;
+}
+
 .post-author{
   font-weight: 600;
   margin-bottom: 6px;

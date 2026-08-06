@@ -4,6 +4,7 @@ import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
 import Spinner from '../components/Spinner.jsx'
 import PostImages from '../components/PostImages.jsx'
+import CaptionText from '../components/CaptionText.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 const PostDetail = () => {
@@ -160,7 +161,7 @@ const PostDetail = () => {
                             <button className='btn-secondary' onClick={() => setIsEditing(false)}>Cancel</button>
                         </div>
                     ) : (
-                        <p>{post.caption}</p>
+                        <p><CaptionText text={post.caption} /></p>
                     )}
 
                     <div className='post-actions'>
