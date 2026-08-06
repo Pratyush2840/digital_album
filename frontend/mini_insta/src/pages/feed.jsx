@@ -1,8 +1,9 @@
 import React , {useState , useEffect, useRef, useCallback} from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
 import Spinner from '../components/Spinner.jsx'
+import PostImages from '../components/PostImages.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 const PAGE_SIZE = 10
@@ -20,6 +21,7 @@ const Feed = () => {
     const [editingPostId, setEditingPostId] = useState(null)
     const [captionDraft, setCaptionDraft] = useState('')
     const { user } = useAuth()
+    const navigate = useNavigate()
     const sentinelRef = useRef(null)
     const loadingMoreRef = useRef(false)
 
@@ -188,9 +190,7 @@ const Feed = () => {
                 const isSaved = savedIds.includes(post._id)
                 return (
                     <div key={post._id} className='post-card'>
-                        <Link to={`/post/${post._id}`}>
-                            <img src={post.image} alt='Post' />
-                        </Link>
+                        <PostImages post={post} onImageClick={() => navigate(`/post/${post._id}`)} />
                         <div className='post-header'>
                             {post.user?.username && (
                                 <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>

@@ -32,7 +32,8 @@ const CreatePost = () => {
         <h1>Create Post</h1>
 
         <form onSubmit={handleSubmit}>
-          <input type="file" name='image' accept = "image/*" />
+          <input type="file" name='images' accept="image/*" multiple required />
+          <p className='create-post-hint'>You can select multiple images to create a carousel post.</p>
           <input type="text" name='caption' placeholder='Enter Caption' required />
           {error && <p className="auth-error">{error}</p>}
           <button type='submit' className='btn-primary'>Create Post</button>

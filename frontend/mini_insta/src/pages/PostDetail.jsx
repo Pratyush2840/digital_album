@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import api from '../utils/api.js'
 import NavBar from '../components/NavBar.jsx'
 import Spinner from '../components/Spinner.jsx'
+import PostImages from '../components/PostImages.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 const PostDetail = () => {
@@ -135,7 +136,7 @@ const PostDetail = () => {
             <NavBar />
             <section className='feed-section'>
                 <div className='post-card'>
-                    <img src={post.image} alt='Post' />
+                    <PostImages post={post} />
                     <div className='post-header'>
                         {post.user?.username && (
                             <Link to={`/profile/${post.user._id}`} className='post-author'>@{post.user.username}</Link>
